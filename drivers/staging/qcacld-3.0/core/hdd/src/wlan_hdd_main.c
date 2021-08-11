@@ -14314,6 +14314,9 @@ static void __hdd_inform_wifi_off(void)
 	struct hdd_context *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 	int ret;
 
+	if (QDF_GLOBAL_FTM_MODE == hdd_get_conparam())
+		return;
+
 	ret = wlan_hdd_validate_context(hdd_ctx);
 	if (ret != 0)
 		return;
