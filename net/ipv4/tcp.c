@@ -2515,7 +2515,7 @@ out:
 	local_bh_enable();
 	release_sock(sk);
 	if (!sk->sk_net_refcnt)
-		inet_csk_clear_xmit_timers_sync(sk);
+		inet_csk_clear_xmit_timers(sk);
 	sock_put(sk);
 }
 EXPORT_SYMBOL(tcp_close);
