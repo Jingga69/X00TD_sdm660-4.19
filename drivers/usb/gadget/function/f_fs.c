@@ -2097,7 +2097,6 @@ static void ffs_func_eps_disable(struct ffs_function *func)
 	count = func->ffs->eps_count;
 	epfile = func->ffs->epfiles;
 	ep = func->eps;
-
 	while (count--) {
 		/* pending requests get nuked */
 		if (likely(ep->ep))
