@@ -116,11 +116,11 @@ extern "C" {
             } while (0)
 
 #define WMI_GET_BITS(_val,_index,_num_bits)                         \
-    (((_val) >> (_index)) & ((1 << (_num_bits)) - 1))
+    (((_val) >> (_index)) & (((A_UINT32) 1 << (_num_bits)) - 1))
 
-#define WMI_SET_BITS(_var,_index,_num_bits,_val) do {               \
-    (_var) &= ~(((1 << (_num_bits)) - 1) << (_index));              \
-    (_var) |= (((_val) & ((1 << (_num_bits)) - 1)) << (_index));    \
+#define WMI_SET_BITS(_var,_index,_num_bits,_val) do {                       \
+    (_var) &= ~((((A_UINT32) 1 << (_num_bits)) - 1) << (_index));           \
+    (_var) |= (((_val) & (((A_UINT32) 1 << (_num_bits)) - 1)) << (_index)); \
     } while (0)
 
 #define WMI_APPEND_TWO_SET_BITS(var, lsb_index, lsb_num_bits, msb_index, msb_num_bits, val) \
@@ -180,7 +180,7 @@ static INLINE A_UINT32 wmi_packed_arr_get_bits(A_UINT32 *arr,
     A_UINT32 index_in_uint = (entry_index - num_entries_in_prev_uints);
     A_UINT32 start_bit_in_uint = (index_in_uint * bits_per_entry);
     return (arr[uint_index] >> start_bit_in_uint) &
-            ((1 << bits_per_entry) - 1);
+            (((A_UINT32) 1 << bits_per_entry) - 1);
 }
 
 static INLINE void wmi_packed_arr_set_bits(A_UINT32 *arr, A_UINT32 entry_index,
@@ -192,9 +192,10 @@ static INLINE void wmi_packed_arr_set_bits(A_UINT32 *arr, A_UINT32 entry_index,
     A_UINT32 index_in_uint = (entry_index - num_entries_in_prev_uints);
     A_UINT32 start_bit_in_uint = (index_in_uint * bits_per_entry);
 
-    arr[uint_index] &= ~(((1 << bits_per_entry) - 1) << start_bit_in_uint);
+    arr[uint_index] &=
+        ~((((A_UINT32) 1 << bits_per_entry) - 1) << start_bit_in_uint);
     arr[uint_index] |=
-        ((val & ((1 << bits_per_entry) - 1)) << start_bit_in_uint);
+        ((val & (((A_UINT32) 1 << bits_per_entry) - 1)) << start_bit_in_uint);
 }
 
 /** 2 word representation of MAC addr */
@@ -218,10 +219,10 @@ typedef struct _wmi_mac_addr {
 /** macro to convert MAC address from char array to WMI word format */
 #define WMI_CHAR_ARRAY_TO_MAC_ADDR(c_macaddr,pwmi_mac_addr)  do { \
     (pwmi_mac_addr)->mac_addr31to0 = \
-       (((c_macaddr)[0] <<  0) | \
-        ((c_macaddr)[1] <<  8) | \
-        ((c_macaddr)[2] << 16) | \
-        ((c_macaddr)[3] << 24)); \
+       (((A_UINT32)(c_macaddr)[0] <<  0) | \
+        ((A_UINT32)(c_macaddr)[1] <<  8) | \
+        ((A_UINT32)(c_macaddr)[2] << 16) | \
+        ((A_UINT32)(c_macaddr)[3] << 24)); \
     (pwmi_mac_addr)->mac_addr47to32 = ((c_macaddr)[4] | ((c_macaddr)[5] << 8));\
    } while (0)
 
@@ -510,6 +511,8 @@ typedef enum {
     WMI_PDEV_FIPS_EXTEND_CMDID,
     WMI_PDEV_FIPS_MODE_SET_CMDID,
     WMI_PDEV_FEATURESET_CMDID,
+    /** tag as Filter Pass category and the filters set for FP mode */
+    WMI_PDEV_MESH_RX_FILTER_ENABLE_CMDID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -1210,6 +1213,9 @@ typedef enum {
 
     /* WMI cmd used to allocate HW scratch registers */
     WMI_PMM_SCRATCH_REG_ALLOCATION_CMDID,
+
+    /* WMI cmd used to start/stop XGAP (XPAN Green AP) */
+    WMI_XGAP_ENABLE_CMDID,
 
     /*  Offload 11k related requests */
     WMI_11K_OFFLOAD_REPORT_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_11K_OFFLOAD),
@@ -2155,6 +2161,9 @@ typedef enum {
     /* WMI event to indicate Helath Monitor Infra init done */
     WMI_HEALTH_MON_INIT_DONE_EVENTID,
 
+    /* WMI XGAP enable command response event ID */
+    WMI_XGAP_ENABLE_COMPLETE_EVENTID,
+
 
     /* GPIO Event */
     WMI_GPIO_INPUT_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_GPIO),
@@ -2390,11 +2399,11 @@ typedef enum {
 #define WMI_CHAN_FLAG_ALLOW_EHT   21 /* EHT (11be) is allowed on this channel */
 
 #define WMI_SET_CHANNEL_FLAG(pwmi_channel,flag) do { \
-        (pwmi_channel)->info |=  (1 << flag);      \
+        (pwmi_channel)->info |=  ((A_UINT32) 1 << flag);      \
      } while (0)
 
 #define WMI_GET_CHANNEL_FLAG(pwmi_channel,flag)   \
-        (((pwmi_channel)->info & (1 << flag)) >> flag)
+        (((pwmi_channel)->info & ((A_UINT32) 1 << flag)) >> flag)
 
 #define WMI_SET_CHANNEL_MIN_POWER(pwmi_channel,val) do { \
      (pwmi_channel)->reg_info_1 &= 0xffffff00;           \
@@ -2779,11 +2788,11 @@ enum {
 #define WMI_DBS_CONC_SCAN_CFG_ASYNC_DBS_SCAN_BITPOS  (28)
 #define WMI_DBS_CONC_SCAN_CFG_SYNC_DBS_SCAN_BITPOS   (27)
 
-#define WMI_DBS_CONC_SCAN_CFG_DBS_SCAN_MASK         (0x1 << WMI_DBS_CONC_SCAN_CFG_DBS_SCAN_BITPOS)
-#define WMI_DBS_CONC_SCAN_CFG_AGILE_SCAN_MASK       (0x1 << WMI_DBS_CONC_SCAN_CFG_AGILE_SCAN_BITPOS)
-#define WMI_DBS_CONC_SCAN_CFG_AGILE_DFS_SCAN_MASK   (0x1 << WMI_DBS_CONC_SCAN_CFG_AGILE_DFS_SCAN_BITPOS)
-#define WMI_DBS_CONC_SCAN_CFG_ASYC_DBS_SCAN_MASK    (0x1 << WMI_DBS_CONC_SCAN_CFG_ASYNC_DBS_SCAN_BITPOS)
-#define WMI_DBS_CONC_SCAN_CFG_SYNC_DBS_SCAN_MASK    (0x1 << WMI_DBS_CONC_SCAN_CFG_SYNC_DBS_SCAN_BITPOS)
+#define WMI_DBS_CONC_SCAN_CFG_DBS_SCAN_MASK         ((A_UINT32) 0x1 << WMI_DBS_CONC_SCAN_CFG_DBS_SCAN_BITPOS)
+#define WMI_DBS_CONC_SCAN_CFG_AGILE_SCAN_MASK       ((A_UINT32) 0x1 << WMI_DBS_CONC_SCAN_CFG_AGILE_SCAN_BITPOS)
+#define WMI_DBS_CONC_SCAN_CFG_AGILE_DFS_SCAN_MASK   ((A_UINT32) 0x1 << WMI_DBS_CONC_SCAN_CFG_AGILE_DFS_SCAN_BITPOS)
+#define WMI_DBS_CONC_SCAN_CFG_ASYC_DBS_SCAN_MASK    ((A_UINT32) 0x1 << WMI_DBS_CONC_SCAN_CFG_ASYNC_DBS_SCAN_BITPOS)
+#define WMI_DBS_CONC_SCAN_CFG_SYNC_DBS_SCAN_MASK    ((A_UINT32) 0x1 << WMI_DBS_CONC_SCAN_CFG_SYNC_DBS_SCAN_BITPOS)
 
 #define WMI_DBS_CONC_SCAN_CFG_DBS_SCAN_SET(scan_cfg, value) \
     WMI_SET_BITS(scan_cfg, WMI_DBS_CONC_SCAN_CFG_DBS_SCAN_BITPOS, 1, value)
@@ -2814,12 +2823,12 @@ enum {
 #define WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_P2P_BITPOS (27)
 #define WMI_DBS_FW_MODE_CFG_ASYNC_SBS_BITPOS            (26)
 
-#define WMI_DBS_FW_MODE_CFG_DBS_MASK                    (0x1 << WMI_DBS_FW_MODE_CFG_DBS_BITPOS)
-#define WMI_DBS_FW_MODE_CFG_AGILE_DFS_MASK              (0x1 << WMI_DBS_FW_MODE_CFG_AGILE_DFS_BITPOS)
-#define WMI_DBS_FW_MODE_CFG_DBS_FOR_CXN_DFS_MASK        (0x1 << WMI_DBS_FW_MODE_CFG_DBS_FOR_CXN_BITPOS)
-#define WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_STA_MASK   (0x1 << WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_STA_BITPOS)
-#define WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_P2P_MASK   (0x1 << WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_P2P_BITPOS)
-#define WMI_DBS_FW_MODE_CFG_ASYNC_SBS_MASK              (0x1 << WMI_DBS_FW_MODE_CFG_ASYNC_SBS_BITPOS)
+#define WMI_DBS_FW_MODE_CFG_DBS_MASK                    ((A_UINT32) 0x1 << WMI_DBS_FW_MODE_CFG_DBS_BITPOS)
+#define WMI_DBS_FW_MODE_CFG_AGILE_DFS_MASK              ((A_UINT32) 0x1 << WMI_DBS_FW_MODE_CFG_AGILE_DFS_BITPOS)
+#define WMI_DBS_FW_MODE_CFG_DBS_FOR_CXN_DFS_MASK        ((A_UINT32) 0x1 << WMI_DBS_FW_MODE_CFG_DBS_FOR_CXN_BITPOS)
+#define WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_STA_MASK   ((A_UINT32) 0x1 << WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_STA_BITPOS)
+#define WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_P2P_MASK   ((A_UINT32) 0x1 << WMI_DBS_FW_MODE_CFG_DBS_FOR_STA_PLUS_P2P_BITPOS)
+#define WMI_DBS_FW_MODE_CFG_ASYNC_SBS_MASK              ((A_UINT32) 0x1 << WMI_DBS_FW_MODE_CFG_ASYNC_SBS_BITPOS)
 
 #define WMI_DBS_FW_MODE_CFG_DBS_SET(fw_mode, value) \
     WMI_SET_BITS(fw_mode, WMI_DBS_FW_MODE_CFG_DBS_BITPOS, 1, value)
@@ -11348,6 +11357,28 @@ typedef struct {
      * values).
      */
     A_INT32 peer_rssi_per_chain[WMI_MAX_CHAINS];
+    /* show how many elements in the tx_rate_counts array belong to this peer */
+    A_UINT32 num_tx_rate_counts;
+    /* show how many elements in the rx_rate_counts array belong to this peer */
+    A_UINT32 num_rx_rate_counts;
+    /* This TLV array is followed by other TLVs:
+     *   A_UINT32 tx_rate_counts[sum(num_tx_rate_counts)];
+     *       The above num_tx_rate_counts field shows which elements
+     *       within the tx_rate_counts array belong to a given peer.
+     *       Elements tx_rate_counts[0] to tx_rate_counts[N0-1] belong to
+     *       peer 0, where N0 = peer_stats_info[0].num_tx_rate_counts.
+     *       Elements tx_rate_counts[N0] to tx_rate_counts[N0+N1-1] belong to
+     *       peer 1, where N1 = peer_stats_info[1].num_tx_rate_counts.
+     *       etc.
+     *   A_UINT32 rx_rate_counts[sum(num_rx_rate_counts)];
+     *       The above num_rx_rate_counts field shows which elements
+     *       within the rx_rate_counts array belong to a given peer.
+     *       Elements rx_rate_counts[0] to rx_rate_counts[N0-1] belong to
+     *       peer 0, where N0 = peer_stats_info[0].num_rx_rate_counts.
+     *       Elements rx_rate_counts[N0] to rx_rate_counts[N0+N1-1] belong to
+     *       peer 1, where N1 = peer_stats_info[1].num_rx_rate_counts.
+     *       etc.
+     */
 } wmi_peer_stats_info;
 
 typedef struct {
@@ -15101,6 +15132,8 @@ typedef struct {
     A_INT32 max_allowed_tx_power;
     /** unique id to identify mac's TSF register */
     A_UINT32 mac_tsf_id;
+    /** ignore mac_tsf_id unless mac_tsf_id_valid is set */
+    A_UINT32 mac_tsf_id_valid;
 } wmi_vdev_start_response_event_fixed_param;
 
 typedef struct {
@@ -16498,8 +16531,12 @@ typedef struct {
  * by the target).
  */
 #define WMI_PEER_PARAM_FIXED_RATE                       0xF
-/** Whitelist peer TIDs */
-#define WMI_PEER_SET_MU_WHITELIST                       0x10
+
+/** Allowlist peer TIDs */
+#define WMI_PEER_SET_MU_ALLOWLIST                       0x10
+/* retain definition of deprecated prior name, for backwards compatibility */
+#define WMI_PEER_SET_MU_WHITELIST WMI_PEER_SET_MU_ALLOWLIST
+
 /** Set peer max tx rate (MCS) in adaptive rate ctrl */
 #define WMI_PEER_SET_MAX_TX_RATE                        0x11
 /** Set peer minimal tx rate (MCS) in adaptive rate ctrl */
@@ -16975,6 +17012,26 @@ typedef struct {
      */
     A_UINT32 tid_to_link_map_info;
 } wmi_peer_assoc_tid_to_link_map;
+
+#define WMI_PDEV_MESH_RX_FILTER_GET(enable) WMI_GET_BITS(enable,0,1)
+#define WMI_PDEV_MESH_RX_FILTER_SET(enable,value) WMI_SET_BITS(enable,0,1,value)
+
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_mesh_rx_filter_enable_fixed_param **/
+    A_UINT32 tlv_header;
+
+    A_UINT32 pdev_id;
+    union {
+        struct {
+            A_UINT32 enable: 1, /** denotes enable/disable mesh rx filter, refer to WMI_PDEV_MESH_RX_FILTER_GET/SET macros */
+                    reserved: 31;
+        };
+        A_UINT32 enable_word32;
+    };
+
+    /** Mac_Add for the RX filter **/
+    wmi_mac_addr link_macaddr;
+} wmi_pdev_mesh_rx_filter_enable_fixed_param;
 
 typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_assoc_complete_cmd_fixed_param */
@@ -19500,6 +19557,7 @@ typedef enum event_type_e {
     WOW_ROAM_STATS_EVENT,                 /* 32 + 12 */
     WOW_RTT_11AZ_EVENT,                   /* 32 + 13 */
     WOW_P2P_NOA_EVENT,                    /* 32 + 14 */
+    WOW_XGAP_EVENT,                       /* 32 + 15 */
 } WOW_WAKE_EVENT_TYPE;
 
 typedef enum wake_reason_e {
@@ -19585,6 +19643,8 @@ typedef enum wake_reason_e {
     WOW_REASON_DELAYED_WAKEUP_DATA_STORE_LIST_FULL,
     /* Sched PM FW initiated termination event */
     WOW_REASON_SCHED_PM_TERMINATED,
+    /* XGAP entry/exit response */
+    WOW_REASON_XGAP,
 
     /* add new WOW_REASON_ defs before this line */
     WOW_REASON_MAX,
@@ -24849,6 +24909,8 @@ typedef struct {
     A_INT32 max_allowed_tx_power;
     /** unique id to identify mac's TSF register */
     A_UINT32 mac_tsf_id;
+    /** ignore mac_tsf_id unless mac_tsf_id_valid is set */
+    A_UINT32 mac_tsf_id_valid;
     /**
      * TLV (tag length value) parameters follows roam_synch_event
      * The TLV's are:
@@ -29678,6 +29740,21 @@ typedef struct {
     A_UINT32 vdev_id;
 } wmi_vdev_get_bcn_recv_stats_cmd_fixed_param;
 
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_xgap_enable_cmd_fixed_param */
+    A_UINT32 beacon_interval; /* in TU */
+    A_UINT32 sap_lp_flag;     /* bit 0 : set/unset for enter/exit XGAP */
+    A_UINT32 dialog_token;
+    A_UINT32 duration;        /* in us : sap LP enter/exit duration, 0 for permanent exit */
+} wmi_xgap_enable_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_xgap_enable_complete_event_fixed_param */
+    A_UINT32 dialog_token;
+    A_UINT32 next_tsf_low32;
+    A_UINT32 next_tsf_high32;
+} wmi_xgap_enable_complete_event_fixed_param;
+
 /*
  * wmi mws-coex command IDs
  */
@@ -32543,6 +32620,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_COEX_DBAM_CMDID);
         WMI_RETURN_STRING(WMI_PDEV_FEATURESET_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_PARAM_ENABLE_SR_PROHIBIT_CMDID);
+        WMI_RETURN_STRING(WMI_XGAP_ENABLE_CMDID);
+        WMI_RETURN_STRING(WMI_PDEV_MESH_RX_FILTER_ENABLE_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -34218,7 +34297,7 @@ typedef struct {
     A_UINT32 dialog_id;     /* TWT dialog ID */
     A_UINT32 suspend_duration_ms;  /* this long time after TWT paused the 1st SP will start (millisecond) */
     A_UINT32 next_twt_size; /* Next TWT subfield Size, refer to IEEE 802.11ax section "9.4.1.60 TWT Information field" */
-    A_UINT32 sp_start_offset; /* Next TWT service period will be offset by this time (microsecond) */
+    A_INT32 sp_start_offset; /* Next TWT service period will be offset by this time (microsecond) */
 } wmi_twt_nudge_dialog_cmd_fixed_param;
 
 /* status code of nudging TWT dialog */
