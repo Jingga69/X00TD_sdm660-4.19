@@ -391,7 +391,6 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int total_tags,
 	tags = &etags->tags;
 	tags->nr_tags = total_tags;
 	tags->nr_reserved_tags = reserved_tags;
-	spin_lock_init(&tags->lock);
 
 	return blk_mq_init_bitmap_tags(tags, node, alloc_policy);
 }
