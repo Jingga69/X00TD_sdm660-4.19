@@ -63,7 +63,7 @@ const struct wlan_crypto_cipher *wlan_crypto_cipher_ops[WLAN_CRYPTO_CIPHER_MAX];
  *
  * Return: wlan_crypto_params or NULL in case of failure
  */
-static struct wlan_crypto_params *wlan_crypto_vdev_get_comp_params(
+struct wlan_crypto_params *wlan_crypto_vdev_get_comp_params(
 				struct wlan_objmgr_vdev *vdev,
 				struct wlan_crypto_comp_priv **crypto_priv){
 	*crypto_priv = (struct wlan_crypto_comp_priv *)
@@ -2144,6 +2144,8 @@ wlan_crypto_rsn_keymgmt_to_suite(uint32_t keymgmt)
 		return RSN_AUTH_KEY_MGMT_OWE;
 	case WLAN_CRYPTO_KEY_MGMT_DPP:
 		return RSN_AUTH_KEY_MGMT_DPP;
+	case WLAN_CRYPTO_KEY_MGMT_FT_IEEE8021X_SHA384:
+		return RSN_AUTH_KEY_MGMT_FT_802_1X_SUITE_B_192;
 	}
 
 	return status;
@@ -2296,6 +2298,8 @@ static int32_t wlan_crypto_rsn_suite_to_keymgmt(uint8_t *sel)
 		return WLAN_CRYPTO_KEY_MGMT_OWE;
 	case RSN_AUTH_KEY_MGMT_DPP:
 		return WLAN_CRYPTO_KEY_MGMT_DPP;
+	case RSN_AUTH_KEY_MGMT_FT_802_1X_SUITE_B_192:
+		return WLAN_CRYPTO_KEY_MGMT_FT_IEEE8021X_SHA384;
 	}
 
 	return status;
@@ -2784,6 +2788,13 @@ uint8_t *wlan_crypto_build_rsnie(struct wlan_objmgr_vdev *vdev,
 	if (HAS_KEY_MGMT(crypto_params, WLAN_CRYPTO_KEY_MGMT_OSEN)) {
 		selcnt[0]++;
 		RSN_ADD_KEYMGMT_TO_SUITE(frm, WLAN_CRYPTO_KEY_MGMT_OSEN);
+	}
+	if (HAS_KEY_MGMT(crypto_params,
+			 WLAN_CRYPTO_KEY_MGMT_FT_IEEE8021X_SHA384)) {
+		uint32_t kmgmt =  WLAN_CRYPTO_KEY_MGMT_FT_IEEE8021X_SHA384;
+
+		selcnt[0]++;
+		RSN_ADD_KEYMGMT_TO_SUITE(frm, kmgmt);
 	}
 add_rsn_caps:
 	WLAN_CRYPTO_ADDSHORT(frm, crypto_params->rsn_caps);
@@ -3965,6 +3976,27 @@ wlan_crypto_reset_prarams(struct wlan_crypto_params *params)
 	params->cipher_caps = 0;
 	params->key_mgmt = 0;
 	params->rsn_caps = 0;
+}
+
+uint8_t *
+wlan_crypto_parse_rsnxe_ie(uint8_t *rsnxe_ie, uint8_t *cap_len)
+{
+	uint8_t len;
+	uint8_t *ie;
+
+	if (!rsnxe_ie)
+		return NULL;
+
+	ie = rsnxe_ie;
+	len = ie[1];
+	ie += 2;
+
+	if (!len)
+		return NULL;
+
+	*cap_len = ie[0] & 0xf;
+
+	return ie;
 }
 
 QDF_STATUS wlan_set_vdev_crypto_prarams_from_ie(struct wlan_objmgr_vdev *vdev,
